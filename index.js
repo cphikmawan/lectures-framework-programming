@@ -43,32 +43,27 @@ server.post('/login', async function(req, res){
     if (username && password){
         try {
             const db = await Database.get();
-            db.users.find({
-                username: {$eq: username}, password: {$eq: password}
-            }).$.subscribe(users => {
-                users.every(user => {
-                    if(user.username === username && user.password === password) {
-                        db.logs.insertLog(username, 'Login Berhasil');
-                        res.redirect("/home");
-                    }
-                });
-            });
+            const users = await db.users.findOne({ username: {$eq: username}, password: {$eq: password}}).exec();
+            // console.error(users.get('username'));
+            if (!users) {
+                // console.error('users not found');
+                db.logs.insertLog(username, 'Login Gagal Bosq');
+                return res.redirect("/status");
+            } else {
+                db.logs.insertLog(username, 'Login Sukses Bosq');
+                return res.redirect("/home");
+            }
         } catch(e) {
             Log.error(e);
         }
     }
-    // res.redirect("/home");
-    // res.end();
 });
 
 server.get('/home',function(req,res){
     res.sendFile(path.join(__dirname + '/src/yes.html'));
 })
 
-server.get('/gagal/:id', async function(req,res){
-    var username = req.params.id;
-    const db = await Database.get();
-    db.logs.insertLog(username, 'Login Gagal');
+server.get('/status', function(req,res){
     res.sendFile(path.join(__dirname + '/src/status.html'));
 })
 
